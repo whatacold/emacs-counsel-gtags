@@ -147,7 +147,12 @@ This variable does not have any effect unless
   (let ((cmd-options (counsel-gtags--command-options type)))
     (push "-c" cmd-options)
     (counsel--async-command
-     (mapconcat #'identity (cons "global" (reverse cmd-options)) " "))
+     (mapconcat #'identity (cons "global" (reverse cmd-options)) " ")
+     nil
+     (lambda (process str)
+       (counsel--async-filter
+        process
+        (replace-regexp-in-string "\r\n" "\n" str))))
     nil))
 
 (defun counsel-gtags--file-and-line (candidate)

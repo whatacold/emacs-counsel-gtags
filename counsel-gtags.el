@@ -375,7 +375,7 @@ Prompt for ROOTDIR and LABEL if not given.  This command is asynchronous."
                       (error "This buffer is not related to any file."))))
     (if (file-remote-p filename)
         (tramp-file-name-localname (tramp-dissect-file-name filename))
-      (file-truename filename))))
+      filename)))
 
 (defun counsel-gtags--read-tag-directory ()
   (let ((dir (read-directory-name "Directory tag generated: " nil nil t)))

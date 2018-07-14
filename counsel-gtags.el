@@ -160,16 +160,29 @@ This variable does not have any effect unless
       (list (cl-first fields) (string-to-number (or (cl-second fields) "1"))))))
 
 (defun counsel-gtags--find-file (candidate)
+  "Find file and go to the line as specified in `CANDIDATE'.
+
+NOTE: Don't call this function directly, call `counsel-gtags--find-file-ivy'
+or `counsel-gtags--find-file-not-ivy' instead."
+  (cl-destructuring-bind (file line) (counsel-gtags--file-and-line candidate)
+    (counsel-gtags--push 'from)
+    (let ((default-directory counsel-gtags--original-default-directory))
+      (find-file file)
+      (goto-char (point-min))
+      (forward-line (1- line))
+      (back-to-indentation))
+    (counsel-gtags--push 'to)))
+
+(defun counsel-gtags--find-file-ivy (candidate)
+  "Find file as a callback for `ivy-read'."
   (with-ivy-window
     (swiper--cleanup)
-    (cl-destructuring-bind (file line) (counsel-gtags--file-and-line candidate)
-      (counsel-gtags--push 'from)
-      (let ((default-directory counsel-gtags--original-default-directory))
-        (find-file file)
-        (goto-char (point-min))
-        (forward-line (1- line))
-        (back-to-indentation))
-      (counsel-gtags--push 'to))))
+    (counsel-gtags--find-file candidate)))
+
+(defun counsel-gtags--find-file-not-ivy (candidate)
+  "Find file directly, i.e. not as a callback for `ivy-read'."
+  (with-selected-window (selected-window)
+    (counsel-gtags--find-file candidate)))
 
 (defun counsel-gtags--read-tag (type)
   (let ((default-val (and counsel-gtags-use-input-at-point (thing-at-point 'symbol)))
@@ -206,9 +219,9 @@ This variable does not have any effect unless
          (default-directory root)
          (collection (counsel-gtags--collect-candidates type tagname encoding extra-options)))
     (if (and auto-select-only-candidate (= (length collection) 1))
-        (counsel-gtags--find-file (car collection))
+        (counsel-gtags--find-file-not-ivy (car collection))
       (ivy-read "Pattern: " collection
-                :action #'counsel-gtags--find-file
+                :action #'counsel-gtags--find-file-ivy
                 :caller 'counsel-gtags--select-file))))
 
 ;;;###autoload
@@ -262,7 +275,8 @@ Prompt for TAGNAME if not given."
                (reverse files))))))
     (ivy-read "Find File: " candidates
               :initial-input default-file
-              :action #'counsel-gtags--find-file
+              :action #'counsel-gtags--find-file-ivy
+
               :caller 'counsel-gtags--read-tag)))
 
 (defun counsel-gtags--default-directory ()

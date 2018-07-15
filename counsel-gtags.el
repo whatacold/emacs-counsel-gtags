@@ -200,16 +200,14 @@ This variable does not have any effect unless
         (coding-system-for-write encoding))
     (apply #'process-lines "global" (append (reverse options) (list tagname)))))
 
-(defun counsel-gtags--select-file (type tagname &optional extra-options auto-select-only-candidate)
+(defun counsel-gtags--select-file (type tagname &optional extra-options)
   (let* ((root (counsel-gtags--default-directory))
          (encoding buffer-file-coding-system)
-         (default-directory root)
-         (collection (counsel-gtags--collect-candidates type tagname encoding extra-options)))
-    (if (and auto-select-only-candidate (= (length collection) 1))
-        (counsel-gtags--find-file (car collection))
-      (ivy-read "Pattern: " collection
-                :action #'counsel-gtags--find-file
-                :caller 'counsel-gtags--select-file))))
+         (default-directory root))
+    (ivy-read "Pattern: "
+              (counsel-gtags--collect-candidates type tagname encoding extra-options)
+              :action #'counsel-gtags--find-file
+              :caller 'counsel-gtags--select-file)))
 
 ;;;###autoload
 (defun counsel-gtags-find-definition (tagname)
@@ -424,8 +422,9 @@ database in prompted directory."
   (let* ((line (line-number-at-pos))
          (root (counsel-gtags--real-file-name (counsel-gtags--default-directory)))
          (file (counsel-gtags--real-file-name))
-         (from-here-opt (format "--from-here=%d:%s" line (file-relative-name file root))))
-    (counsel-gtags--select-file 'from-here tagname (list from-here-opt) t)))
+         (from-here-opt (format "--from-here=%d:%s" line (file-relative-name file root)))
+         (ivy-auto-select-single-candidate t))
+    (counsel-gtags--select-file 'from-here tagname (list from-here-opt))))
 
 ;;;###autoload
 (defun counsel-gtags-dwim ()
